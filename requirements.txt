@@ -1,0 +1,17 @@
+# AgendaCRED - CSMI El Milagro (IPRESS 00005222)
+# Informational requirements; this is a React/Node.js project, NOT a pip requirements file.
+# Exact JavaScript dependencies: package.json + package-lock.json.
+# Install reproducibly with npm ci, or run scripts/setup.ps1 for the isolated Windows environment.
+
+Operating system for bundled portable setup: Windows x64
+Node.js: 24.16.0 (downloaded into .runtime/node; no global installation required)
+npm: bundled with that Node.js release
+Dependencies: package-lock.json (npm ci)
+Installation internet access: nodejs.org and registry.npmjs.org
+Default project directory: D:\Aplicativos\AgendaCRED
+Supabase: project URL + public publishable key in .env.local
+Database: apply supabase/migrations/202611060001_staff_profiles.sql
+Browser: current Edge, Chrome, or Firefox
+Theme: light only
+Facility: Centro de Salud Materno Infantil El Milagro
+IPRESS code in RENIPRESS (provided by establishment): 00005222
