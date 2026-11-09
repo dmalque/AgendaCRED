@@ -3,7 +3,13 @@ import type { PropsWithChildren } from 'react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from '../../shared/lib/supabase';
 
-type AuthValue = { session: Session | null; loading: boolean; recovery: boolean; finishRecovery: () => void; error: string | null };
+type AuthValue = {
+  session: Session | null;
+  loading: boolean;
+  recovery: boolean;
+  finishRecovery: () => void;
+  error: string | null;
+};
 const AuthContext = createContext<AuthValue | null>(null);
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
@@ -23,12 +29,32 @@ export function AuthProvider({ children }: PropsWithChildren) {
       if (event === 'SIGNED_OUT') setRecovery(false);
     });
     // Surface initialization/network errors rather than leaving the loading screen indefinitely.
-    void supabase.auth.getSession().then(({ error }) => {
-      if (alive && error) { setError('No pudimos recuperar la sesión. Intenta ingresar nuevamente.'); setLoading(false); }
-    }).catch(() => { if (alive) { setError('No pudimos conectar con el servicio de acceso.'); setLoading(false); } });
-    return () => { alive = false; data.subscription.unsubscribe(); };
+    void supabase.auth
+      .getSession()
+      .then(({ error }) => {
+        if (alive && error) {
+          setError('No pudimos recuperar la sesión. Intenta ingresar nuevamente.');
+          setLoading(false);
+        }
+      })
+      .catch(() => {
+        if (alive) {
+          setError('No pudimos conectar con el servicio de acceso.');
+          setLoading(false);
+        }
+      });
+    return () => {
+      alive = false;
+      data.subscription.unsubscribe();
+    };
   }, []);
-  return <AuthContext.Provider value={{ session, loading, recovery, finishRecovery: () => setRecovery(false), error }}>{children}</AuthContext.Provider>;
+  return (
+    <AuthContext.Provider
+      value={{ session, loading, recovery, finishRecovery: () => setRecovery(false), error }}
+    >
+      {children}
+    </AuthContext.Provider>
+  );
 }
 export function useAuth() {
   const value = useContext(AuthContext);

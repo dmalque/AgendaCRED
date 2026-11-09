@@ -1,0 +1,8 @@
+node_modules
+dist
+.runtime
+.npm-cache
+.exports
+.qa
+package-lock.json
+supabase/migrations

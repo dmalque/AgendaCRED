@@ -1,48 +1,54 @@
-# Arquitectura y forma de trabajo
+# Arquitectura y metodología
 
-## Enfoque
+Aplicación interna de una sola IPRESS: CSMI El Milagro (00005222). React + TypeScript, componentes funcionales, rutas por módulo con carga diferida y servicios separados de las pantallas. El frontend no contiene claves privilegiadas.
 
-Entrega incremental por funcionalidades (vertical slices), con separación entre presentación, reglas de validación y acceso a servicios. Un solo frontend React evita mantener un servidor propio para este primer alcance. Supabase proporciona identidad y PostgreSQL; RLS controla los datos. No se introducen microservicios ni abstracciones de repositorio sin necesidad.
+## Desarrollo por incrementos verificables
 
-La decisión de usar Vite, en lugar de Next.js, favorece una SPA interna sin necesidad actual de SEO ni renderizado de servidor. React sigue siendo la biblioteca de interfaz. Si aparecen operaciones administrativas privilegiadas, se implementarán en funciones de servidor con validación de identidad y rol, nunca con claves privadas en el navegador.
+Cada funcionalidad recorre definición → implementación vertical → pruebas de reglas y permisos → revisión con enfermería → despliegue. Se evita introducir microservicios o un servidor propio sin necesidad. Las migraciones SQL son parte del código de la funcionalidad.
 
-## Dependencias entre capas
+## Datos y operaciones
 
-- `app` compone proveedores y rutas; no contiene consultas clínicas.
-- Cada `feature` mantiene sus pantallas, reglas y servicios.
-- `shared` no importa funcionalidades del negocio.
-- Los formularios no conocen claves privadas ni deciden sus propios privilegios.
-- Las migraciones de datos se versionan; los cambios manuales del panel deben incorporarse a migraciones posteriores.
+- `staff_profiles`: usuarios autorizados y roles.
+- `facility_settings`, `closed_days`: disponibilidad y validación local de reglas.
+- `children`: identidad, documento, cuidador y contacto, con archivo sin borrado.
+- `appointments`: reserva, duración, responsable, consultorio, estado y vínculo a la programación anterior.
+- `encounters`, `encounter_corrections`: registro breve con fecha real y correcciones anexas.
+- `followups`, `followup_contacts`: tareas y contactos con cierre explícito.
+- `vaccine_records`: versiones de antecedentes documentados, pendientes o por verificar.
+- `audit_events`: valores anteriores/nuevos y autor de cada operación.
 
-## Autenticación y autorización
+Las tablas son de lectura para `authenticated` bajo RLS. Las escrituras pasan por `mutate_cred`, SECURITY DEFINER con `search_path` vacío, comprobación de perfil activo, roles y validación de transición en cada acción. Se revoca EXECUTE a PUBLIC/anon. El servidor genera UUID, fechas y autor; no toma un autor del formulario.
 
-1. `signInWithPassword` entrega la sesión al SDK.
-2. `onAuthStateChange` actualiza el estado de React; el SDK administra refresco y persistencia.
-3. `RequireStaff` verifica identidad con `getUser` y consulta el perfil bajo RLS.
-4. Sin perfil activo, el usuario no obtiene acceso al módulo de agenda.
-5. No se aceptan roles desde campos del formulario, parámetros de URL o metadatos editables del usuario.
+La creación de cuentas se ejecuta en Edge Functions, verifica el token con Supabase Auth y exige administrador o responsable activo. El responsable solo gestiona enfermería. La identidad se crea en Auth con un identificador interno opaco y contraseña inicial y el perfil se guarda mediante RPC con la sesión del solicitante para comprobar nuevamente autorización y auditar. Si falla, se intenta revertir la identidad recién creada. Las credenciales privilegiadas permanecen en el servidor.
 
-Las sesiones se persisten mediante el SDK en el navegador, una decisión propia de esta SPA. No se guardan contraseñas en estado persistente. En equipos compartidos es necesario cerrar sesión. Evitar scripts no confiables y usar HTTPS en producción. Las futuras tablas con datos de menores deben habilitar RLS y exigir personal activo para cada operación, aun si el usuario conserva un JWT anterior a su desactivación.
+La migración 003 agrega `manager`, conserva perfiles y separa configuración operativa de reglas CRED. Solo el administrador asigna roles superiores, cambia la identidad del establecimiento, aprueba reglas y consulta auditoría. La implementación clínica anterior queda privada con ejecución revocada a clientes.
 
-El administrador aún no tiene una consola de altas: la gestión privilegiada inicial se realiza desde el panel Supabase. El frontend no tiene permisos INSERT/UPDATE/DELETE sobre perfiles.
+## Acceso por usuario sin correo
 
-## UX y accesibilidad
+La migración 004 agrega alias únicos y normalizados, preservando identidades y contraseñas existentes. El ingreso llama a `staff-login`; el servidor resuelve internamente el alias a la identidad de Supabase Auth y verifica la contraseña con un cliente no privilegiado aislado por solicitud. Solo devuelve tokens de sesión, sin direcciones ni datos del perfil. El navegador establece la sesión con `setSession`. No existe búsqueda anónima de correos o perfiles.
 
-Diseño coherente con la propuesta aprobada: verde clínico, tipografía legible y tema claro fijo. La identificación CSMI El Milagro e IPRESS 00005222 está centralizada en `shared/config/facility.ts`. Los campos tienen etiquetas, autocomplete, indicadores de error y foco visible. Se respeta `prefers-reduced-motion`. El diseño decorativo del login no usa información real y se oculta a lectores de pantalla. Las fuentes tienen alternativas locales; si Google Fonts no está disponible, la pantalla sigue funcionando.
+Supabase Auth requiere email o teléfono para su proveedor de contraseña. Las nuevas cuentas reciben un identificador técnico aleatorio bajo `accounts.agendacred.invalid`, que no es un buzón y no se muestra al personal. Las cuentas existentes conservan su identidad original. No se envían invitaciones, verificaciones ni enlaces de recuperación desde la aplicación. No hay registro público ni vinculación por UUID en la interfaz.
 
-## Flujo de trabajo
+El límite de acceso reside en PostgreSQL y solo lo invoca el servidor: 10 intentos por usuario y 60 globales cada 5 minutos, incluidos los correctos. Se responde de forma uniforme ante usuario inexistente, inactivo o clave incorrecta. Los tokens de sesión se devuelven con Cache-Control no-store.
 
-Para cada incremento: definir criterio de aceptación → implementar una funcionalidad completa → revisar permisos → ejecutar typecheck, pruebas pertinentes y build → validar con enfermería → desplegar. El método es iterativo inspirado en Kanban, no una afirmación de que existe un proceso Scrum completo.
+El restablecimiento desde Personal verifica el solicitante y autoriza el destino mediante RPC antes de actualizar Auth. Responsable solo gestiona enfermería; administrador gestiona otros perfiles. Se registra PASSWORD_RESET_REQUEST sin contraseña; los registros de Auth contienen el cambio efectivo. No se promete revocación inmediata de JWT ya emitidos. El propietario técnico dispone de un script local e interactivo para recuperar únicamente un administrador existente si pierde su sesión.
 
-Tablero sugerido: Pendiente / Definido / En desarrollo / Verificación / Validación de enfermería / Terminado. Una funcionalidad está terminada cuando cumple criterios, estados vacíos y errores, acceso por rol, comprobaciones automáticas y documentación.
+## Concurrencia
 
-## Próximos incrementos
+Exclusiones GiST con intervalos `[inicio, fin)` impiden cruces, incluyendo solapamientos parciales. Se permiten turnos contiguos. Niño, profesional y consultorio tienen restricciones separadas.
 
-1. Padrón: niño, cuidador, documento provisional y prevención de duplicados.
-2. Agenda: horario, enfermera, consultorio, exclusiones de cruces y estados diferenciados.
-3. Seguimiento: inasistencias, llamadas, visitas y resolución de pendientes.
-4. Reportes: lista imprimible y archivo XLSX acordado con el consultorio.
-5. Motor de reglas: versiones normativas, vigencias y confirmación profesional.
-6. Administración: usuarios, cupos, auditoría y configuración institucional.
+Reprogramar cambia el estado de la cita anterior e inserta una nueva en una transacción; si falla el nuevo horario, la anterior permanece intacta. Las revisiones en registros editables detectan cambios concurrentes. El último administrador activo no se puede deshabilitar ni degradar, con bloqueo transaccional para evitar carreras entre administradores.
 
-Las restricciones de cruce de horarios también deberán existir en PostgreSQL para resolver concurrencia entre 3–4 enfermeras. El motor normativo no se implementa con las tablas informativas del prototipo; requiere matriz de reglas aprobada, intervalos, condiciones y casos de prueba clínicamente validados.
+## Interfaz y carga
+
+Tema claro fijo, formularios con validación nativa, errores en español y diálogos accesibles. Las tablas admiten desplazamiento horizontal y las listas se adaptan a móvil. Impresión elimina navegación y botones. Excel se carga solo al exportar y conserva identificadores como texto.
+
+El proveedor carga conjuntos paginados y actualiza tras operaciones propias, cambios Realtime y al volver a la ventana. Si Realtime falla, usa consulta de respaldo cada minuto. El límite explícito de 100000 filas por conjunto detiene la carga en lugar de truncar silenciosamente; para volúmenes mayores se debe pasar a paginación y búsqueda totalmente en servidor. Las pantallas filtran el conjunto cargado para el consultorio pequeño previsto.
+
+## Límites clínicos
+
+Las sugerencias CRED parten del calendario de referencia y del último control realizado. Permanecen deshabilitadas hasta revisión local, nunca confirman citas y no generan controles neonatales sin revisión de las ventanas y el alta. Cambiar una etiqueta normativa no implementa una nueva norma. Las vacunas solo documentan antecedentes y fuentes. No se implementa historia clínica integral, puntajes de tamizaje, prescripción, RENIEC ni sincronización HIS.
+
+## Pruebas
+
+Vitest + Testing Library para formularios y búsqueda; pruebas de fechas y XLSX; PGlite para ejecutar las cuatro migraciones y verificar políticas y transacciones de PostgreSQL. Los manejadores HTTP de acceso y personal se comprueban con servicios inyectados y simulados. Las pruebas locales no verifican el gateway de Supabase, Realtime remoto ni el despliegue de Edge Functions. Esos recorridos deben confirmarse en un proyecto de prueba antes del piloto real.
