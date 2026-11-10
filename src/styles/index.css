@@ -893,3 +893,43 @@ input[aria-invalid='true'] {
     padding: 26px 22px;
   }
 }
+
+.pwa-install,
+.pwa-offline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 12px 20px;
+  background: #eaf5ef;
+  color: #194b40;
+  border-bottom: 1px solid #cadcde;
+  font-size: 13px;
+  flex-wrap: wrap;
+}
+.pwa-install p {
+  margin: 6px 0 0;
+  max-width: 540px;
+  line-height: 1.5;
+}
+.pwa-dismiss {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 8px;
+  color: inherit;
+  cursor: pointer;
+}
+.pwa-offline {
+  background: #fff2ce;
+  color: #63480e;
+}
+@media print {
+  .pwa-install,
+  .pwa-offline {
+    display: none;
+  }
+}

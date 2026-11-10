@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="theme-color" content="#176e62" />
+    <title>Sin conexión · AgendaCRED</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 24px;
+        min-height: 100dvh;
+        box-sizing: border-box;
+        display: grid;
+        place-items: center;
+        background: #f4f9f7;
+        color: #203e3b;
+        font:
+          16px/1.6 system-ui,
+          sans-serif;
+      }
+      main {
+        max-width: 390px;
+      }
+      img {
+        width: 64px;
+        height: 64px;
+      }
+      h1 {
+        font-size: 26px;
+        line-height: 1.2;
+      }
+      a {
+        display: inline-block;
+        background: #176e62;
+        color: white;
+        padding: 12px 22px;
+        border-radius: 8px;
+        text-decoration: none;
+      }
+      a:focus-visible {
+        outline: 3px solid #203e3b;
+        outline-offset: 4px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>Sin conexión a internet</h1>
+      <p>Conéctate a internet para consultar la agenda y guardar registros.</p>
+      <p>
+        Si estabas completando un formulario, verifica que se haya guardado antes de volver a
+        registrarlo.
+      </p>
+      <a href="/ingresar">Volver a intentar</a>
+    </main>
+  </body>
+</html>

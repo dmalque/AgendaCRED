@@ -1,0 +1,32 @@
+{
+  "id": "/",
+  "name": "AgendaCRED · CSMI El Milagro",
+  "short_name": "AgendaCRED",
+  "description": "Agenda de crecimiento y desarrollo del CSMI El Milagro.",
+  "lang": "es-PE",
+  "start_url": "/ingresar",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f4f9f7",
+  "theme_color": "#176e62",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}
