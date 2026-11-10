@@ -1,0 +1,122 @@
+export type StaffRole = 'admin' | 'manager' | 'nurse';
+export type Staff = {
+  id: string;
+  full_name: string;
+  username: string;
+  role: StaffRole;
+  active: boolean;
+};
+export type Child = {
+  id: string;
+  full_name: string;
+  document_type: string;
+  document_number: string;
+  birth_date: string;
+  sex: string;
+  history_number: string;
+  guardian_name: string;
+  guardian_relationship: string;
+  phone: string;
+  address: string;
+  notes: string;
+  archived: boolean;
+  revision: number;
+  created_at: string;
+};
+export type AppointmentStatus =
+  'scheduled' | 'arrived' | 'in_progress' | 'completed' | 'no_show' | 'cancelled' | 'rescheduled';
+export type Appointment = {
+  id: string;
+  child_id: string;
+  nurse_id: string;
+  starts_at: string;
+  ends_at: string;
+  room: number;
+  status: AppointmentStatus;
+  reason: string;
+  previous_id: string | null;
+  revision: number;
+};
+export type Encounter = {
+  id: string;
+  appointment_id: string;
+  child_id: string;
+  nurse_id: string;
+  performed_on: string;
+  status: 'draft' | 'final';
+  observations: string;
+  agreements: string;
+  pending: string;
+  next_due_date: string | null;
+  rule_version: string;
+  created_at: string;
+  revision: number;
+};
+export type Correction = {
+  id: string;
+  encounter_id: string;
+  reason: string;
+  correction: string;
+  created_by: string;
+  created_at: string;
+};
+export type Followup = {
+  id: string;
+  child_id: string;
+  appointment_id: string | null;
+  assigned_to: string;
+  reason: string;
+  status: 'open' | 'contacted' | 'resolved';
+  next_action: string;
+  next_date: string | null;
+  resolution: string;
+  revision: number;
+};
+export type Contact = {
+  id: string;
+  followup_id: string;
+  channel: string;
+  result: string;
+  notes: string;
+  created_by: string;
+  created_at: string;
+};
+export type Vaccine = {
+  id: string;
+  child_id: string;
+  vaccine_name: string;
+  dose: string;
+  status: 'documented' | 'pending' | 'unverified';
+  applied_on: string | null;
+  source: string;
+  notes: string;
+  supersedes_id: string | null;
+  created_by: string;
+  created_at: string;
+};
+export type Settings = {
+  id: number;
+  display_name: string;
+  ipress_code: string;
+  opens_at: string;
+  closes_at: string;
+  slot_minutes: number;
+  room_count: number;
+  room_aliases?: Record<string, string>;
+  working_days: number[];
+  rule_version: string;
+  rule_source: string;
+  rules_approved: boolean;
+  approved_by: string | null;
+  approved_at: string | null;
+  revision: number;
+};
+export type ClosedDay = { date: string; reason: string };
+export type AuditEvent = {
+  id: number;
+  entity: string;
+  entity_id: string;
+  action: string;
+  actor_id: string;
+  occurred_at: string;
+};
