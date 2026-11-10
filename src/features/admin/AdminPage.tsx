@@ -57,20 +57,23 @@ export default function AdminPage() {
           <p>Horarios, personal y trazabilidad de CSMI El Milagro.</p>
           {!isAdmin && (
             <p className="hint">
-              Puedes gestionar enfermería, horarios y cierres. Los permisos de administración y las
-              reglas CRED los gestiona el administrador.
+              Puedes gestionar enfermería y horarios. Los permisos de administración y las reglas
+              CRED los gestiona el administrador.
             </p>
           )}
         </div>
       </div>
       <nav className="content-tabs" aria-label="Administración">
-        {['Configuración', 'Días cerrados', 'Personal', ...(isAdmin ? ['Auditoría'] : [])].map(
-          (t) => (
-            <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>
-              {t}
-            </button>
-          ),
-        )}
+        {[
+          'Configuración',
+          ...(isAdmin ? ['Días cerrados'] : []),
+          'Personal',
+          ...(isAdmin ? ['Auditoría'] : []),
+        ].map((t) => (
+          <button key={t} aria-pressed={tab === t} onClick={() => setTab(t)}>
+            {t}
+          </button>
+        ))}
       </nav>
       {tab === 'Configuración' && settings && (
         <section className="surface">
@@ -231,7 +234,7 @@ export default function AdminPage() {
           </Form>
         </section>
       )}
-      {tab === 'Días cerrados' && (
+      {isAdmin && tab === 'Días cerrados' && (
         <section className="surface">
           <div className="section-heading">
             <h2>Feriados y cierres del consultorio</h2>
@@ -274,40 +277,42 @@ export default function AdminPage() {
             Cada persona debe usar su propia cuenta. Desactivar un perfil bloquea las operaciones y
             lecturas protegidas en la base de datos.
           </p>
-          {data.staff.map((s) => (
-            <div className="child-row" key={s.id}>
-              <span className="avatar">{s.full_name[0]}</span>
-              <div className="grow">
-                <strong>{s.full_name}</strong>
-                <p className="small muted">
-                  {roleLabels[s.role]} · {s.active ? 'Activo' : 'Inactivo'}
-                </p>
-                <p className="small muted">
-                  Usuario: <strong>{s.username}</strong>
-                </p>
-              </div>
-              {canManageProfile(profile.role, s) && (
-                <div className="row-actions">
-                  <button
-                    className="button"
-                    onClick={() => setEdit(s)}
-                    aria-label={`Gestionar perfil de ${s.full_name}`}
-                  >
-                    Gestionar perfil
-                  </button>
-                  {s.id !== profile.id && (
+          {data.staff
+            .filter((s) => isAdmin || s.role !== 'admin')
+            .map((s) => (
+              <div className="child-row" key={s.id}>
+                <span className="avatar">{s.full_name[0]}</span>
+                <div className="grow">
+                  <strong>{s.full_name}</strong>
+                  <p className="small muted">
+                    {roleLabels[s.role]} · {s.active ? 'Activo' : 'Inactivo'}
+                  </p>
+                  <p className="small muted">
+                    Usuario: <strong>{s.username}</strong>
+                  </p>
+                </div>
+                {canManageProfile(profile.role, s) && (
+                  <div className="row-actions">
                     <button
                       className="button"
-                      onClick={() => setReset(s)}
-                      aria-label={`Restablecer contraseña de ${s.full_name}`}
+                      onClick={() => setEdit(s)}
+                      aria-label={`Gestionar perfil de ${s.full_name}`}
                     >
-                      Restablecer contraseña
+                      Gestionar perfil
                     </button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+                    {s.id !== profile.id && (
+                      <button
+                        className="button"
+                        onClick={() => setReset(s)}
+                        aria-label={`Restablecer contraseña de ${s.full_name}`}
+                      >
+                        Restablecer contraseña
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            ))}
         </section>
       )}
       {isAdmin && tab === 'Auditoría' && (
@@ -422,7 +427,7 @@ export default function AdminPage() {
           </Form>
         </Modal>
       )}
-      {closed && (
+      {isAdmin && closed && (
         <Modal title="Registrar día cerrado" onClose={() => setClosed(false)}>
           <Form
             action="closed_day"

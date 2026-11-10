@@ -78,6 +78,20 @@ beforeEach(() => {
   });
 });
 describe('staff management UI', () => {
+  it.each(['manager', 'admin'] as const)(
+    'shows closed days and administrator accounts only to the admin (%s)',
+    async (role) => {
+      renderPage(role);
+      if (role === 'admin')
+        expect(screen.getByRole('button', { name: 'Días cerrados' })).toBeInTheDocument();
+      else expect(screen.queryByRole('button', { name: 'Días cerrados' })).not.toBeInTheDocument();
+      await userEvent.click(screen.getByRole('button', { name: 'Personal' }));
+      if (role === 'admin') expect(screen.getByText('Administrador prueba')).toBeInTheDocument();
+      else expect(screen.queryByText('Administrador prueba')).not.toBeInTheDocument();
+      expect(screen.getByText('Enfermera prueba')).toBeInTheDocument();
+    },
+  );
+
   it('restores a nurse password directly from the panel', async () => {
     renderPage('manager');
     await userEvent.click(screen.getByRole('button', { name: 'Personal' }));
