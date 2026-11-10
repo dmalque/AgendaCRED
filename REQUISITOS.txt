@@ -15,8 +15,8 @@ Dependencies: npm ci, using package-lock.json
 Installation internet access: nodejs.org and registry.npmjs.org
 Default project directory: D:\Aplicativos\AgendaCRED (Git Bash: /d/Aplicativos/AgendaCRED)
 Supabase: URL + public publishable key in .env.local
-Database: apply both SQL files in supabase/migrations in filename order, once
-Optional invitations: Supabase Edge Function invite-staff + SMTP + APP_ORIGIN
+Database: apply all SQL migrations in supabase/migrations in filename order, once
+Staff accounts: Supabase Edge Functions staff-login and invite-staff + APP_ORIGIN
 Theme: light only
 Facility: Centro de Salud Materno Infantil El Milagro
 IPRESS in RENIPRESS, supplied by establishment: 00005222

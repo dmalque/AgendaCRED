@@ -73,7 +73,7 @@ scripts/*.sh             Herramientas para Git Bash
 scripts/package.mjs      ZIP multiplataforma mediante Node.js
 .vscode/settings.json    Terminal Git Bash y Node local para este proyecto
 .runtime/node/           Node.js y npm exclusivos (generados)
-requirements.txt         Requisitos; no se instala con pip
+REQUISITOS.txt         Requisitos; no se instala con pip
 package-lock.json        Dependencias reproducibles
 ```
 

@@ -34,7 +34,7 @@ for (const directory of ['src', 'public', 'supabase', 'scripts', '.vscode']) {
 for (const name of [
   'package.json',
   'package-lock.json',
-  'requirements.txt',
+  'REQUISITOS.txt',
   'README.md',
   'INSTALAR.md',
   '.prettierrc.json',
