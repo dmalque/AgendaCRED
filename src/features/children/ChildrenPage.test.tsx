@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Outlet, Routes, Route } from 'react-router-dom';
 import ChildrenPage from './ChildrenPage';
 import { ChildForm } from './ChildForm';
 vi.mock('../../shared/lib/data', () => ({
@@ -33,6 +33,21 @@ vi.mock('../../shared/lib/data', () => ({
   mutate: vi.fn(),
 }));
 describe('padrón', () => {
+  it.each(['nurse', 'manager', 'admin'])('shows archived toggle only for admin (%s)', (role) => {
+    render(
+      <MemoryRouter initialEntries={['/ninos']}>
+        <Routes>
+          <Route element={<Outlet context={{ role }} />}>
+            <Route path="/ninos" element={<ChildrenPage />} />
+          </Route>
+        </Routes>
+      </MemoryRouter>,
+    );
+    if (role === 'admin')
+      expect(screen.getByRole('checkbox', { name: 'Ver archivados' })).toBeInTheDocument();
+    else expect(screen.queryByRole('checkbox', { name: 'Ver archivados' })).not.toBeInTheDocument();
+  });
+
   it('searches document and hides unrelated children', async () => {
     render(
       <MemoryRouter>

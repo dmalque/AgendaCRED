@@ -1,18 +1,21 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Search, Plus } from 'lucide-react';
+import { Link, useOutletContext } from 'react-router-dom';
+import type { Staff } from '../../shared/types';
+import { Search, Plus, ArrowRight } from 'lucide-react';
 import { useData } from '../../shared/lib/data';
 import { ageLabel } from '../../shared/lib/dates';
 import { ChildForm } from './ChildForm';
 export default function ChildrenPage() {
   const { children } = useData();
+  const profile = useOutletContext<Staff | undefined>();
+  const isAdmin = profile?.role === 'admin';
   const [search, setSearch] = useState(''),
     [archived, setArchived] = useState(false),
     [form, setForm] = useState(false),
     [page, setPage] = useState(0);
   const matching = children.filter(
     (c) =>
-      c.archived === archived &&
+      c.archived === (isAdmin && archived) &&
       `${c.full_name} ${c.document_number} ${c.history_number} ${c.guardian_name}`
         .toLocaleLowerCase()
         .includes(search.toLocaleLowerCase()),
@@ -44,17 +47,19 @@ export default function ChildrenPage() {
               placeholder="DNI, CNV, historia, nombre o cuidador"
             />
           </label>
-          <label className="inline-check">
-            <input
-              type="checkbox"
-              checked={archived}
-              onChange={(e) => {
-                setArchived(e.target.checked);
-                setPage(0);
-              }}
-            />
-            Ver archivados
-          </label>
+          {isAdmin && (
+            <label className="inline-check">
+              <input
+                type="checkbox"
+                checked={archived}
+                onChange={(e) => {
+                  setArchived(e.target.checked);
+                  setPage(0);
+                }}
+              />
+              Ver archivados
+            </label>
+          )}
         </div>
         <div className="record-list">
           {matching.slice(page * 20, (page + 1) * 20).map((c) => (
@@ -70,7 +75,7 @@ export default function ChildrenPage() {
                 <p className="small muted">Cuidador: {c.guardian_name}</p>
               </div>
               <Link className="button" to={`/ninos/${c.id}`}>
-                Abrir ficha →
+                Abrir ficha <ArrowRight size={16} aria-hidden="true" />
               </Link>
             </article>
           ))}

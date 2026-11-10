@@ -2,7 +2,7 @@ import { roomLabel } from '../../shared/lib/rooms';
 import { DateInput } from '../../shared/ui/DateInput';
 import { useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
-import { CalendarDays, Plus, Printer } from 'lucide-react';
+import { CalendarDays, Plus, Printer, ArrowRight } from 'lucide-react';
 import { useData } from '../../shared/lib/data';
 import { addDays, dateOnly, showDate, timeOnly, todayLima } from '../../shared/lib/dates';
 import { Status, Form, Field, text } from '../../shared/ui/Forms';
@@ -220,7 +220,7 @@ export default function AgendaPage() {
             ))}
             {!pending.length && <p className="hint">Sin seguimientos pendientes.</p>}
             <Link className="text-link" to="/seguimiento">
-              Ver seguimiento →
+              Ver seguimiento <ArrowRight size={16} aria-hidden="true" />
             </Link>
           </div>
           <div className="surface">

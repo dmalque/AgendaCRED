@@ -1,3 +1,4 @@
+import { ArrowLeft } from 'lucide-react';
 import { roomLabel } from '../../shared/lib/rooms';
 import { DateInput } from '../../shared/ui/DateInput';
 import { useEffect, useState } from 'react';
@@ -52,7 +53,7 @@ export default function ChildProfilePage() {
       active = false;
     };
   }, [id, revision, data.version]);
-  if (!child)
+  if (!child || (child.archived && profile.role !== 'admin'))
     return (
       <div className="empty-state">
         <h1>Ficha no encontrada</h1>
@@ -85,7 +86,7 @@ export default function ChildProfilePage() {
   return (
     <>
       <Link to="/ninos" className="text-link">
-        ← Volver al padrón
+        <ArrowLeft size={16} aria-hidden="true" /> Volver al padrón
       </Link>
       <div className="page-heading profile-heading">
         <div>

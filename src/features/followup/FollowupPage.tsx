@@ -1,3 +1,4 @@
+import { Plus } from 'lucide-react';
 import { DateInput } from '../../shared/ui/DateInput';
 import { useEffect, useState } from 'react';
 import { Link, useOutletContext } from 'react-router-dom';
@@ -65,8 +66,17 @@ export function CreateFollowup({ childId, onClose }: { childId?: string; onClose
     </Modal>
   );
 }
+function normalizeSearch(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLocaleLowerCase()
+    .trim()
+    .replace(/\s+/g, ' ');
+}
 export default function FollowupPage() {
   const { followups, children, staff } = useData(),
+    [search, setSearch] = useState(''),
     [filter, setFilter] = useState('pending'),
     [responsible, setResponsible] = useState(''),
     [create, setCreate] = useState(false),
@@ -90,6 +100,7 @@ export default function FollowupPage() {
       alive = false;
     };
   }, [followups]);
+  const query = normalizeSearch(search);
   const tasks = followups
     .filter(
       (t) =>
@@ -97,20 +108,35 @@ export default function FollowupPage() {
           (filter === 'resolved' ? t.status === 'resolved' : t.status !== 'resolved')) &&
         (!responsible || t.assigned_to === responsible),
     )
+    .filter((t) => {
+      if (!query) return true;
+      const child = children.find((c) => c.id === t.child_id);
+      return normalizeSearch(
+        (child?.full_name || '') + ' ' + (child?.document_number || ''),
+      ).includes(query);
+    })
     .sort((a, b) => (a.next_date || '9999').localeCompare(b.next_date || '9999'));
   return (
     <>
       <div className="page-heading">
         <div>
-          <p className="overline">CONTINUIDAD DEL CUIDADO</p>
-          <h1>Que nadie quede pendiente.</h1>
-          <p>Contactos, inasistencias y próximas acciones del equipo.</p>
+          <h1>Seguimiento</h1>
+          <p>Contactos y próximas acciones del equipo.</p>
         </div>
         <button className="button primary" onClick={() => setCreate(true)}>
-          + Crear seguimiento
+          <Plus size={17} aria-hidden="true" /> Crear seguimiento
         </button>
       </div>
       <div className="filter-bar">
+        <Field label="Buscar niño o niña">
+          <input
+            type="search"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Nombre o documento"
+            autoComplete="off"
+          />
+        </Field>
         <Field label="Estado">
           <select value={filter} onChange={(e) => setFilter(e.target.value)}>
             <option value="pending">Pendientes</option>
@@ -136,91 +162,115 @@ export default function FollowupPage() {
           {error}
         </div>
       )}
-      <div className="stack">
+      <section className="followup-list" aria-label="Lista de seguimientos">
+        <div className="followup-list-heading">
+          <strong>{tasks.length} seguimientos</strong>
+          <span>Abre el detalle para consultar los contactos.</span>
+        </div>
         {tasks.map((t) => {
           const c = children.find((c) => c.id === t.child_id);
+          const history = contacts
+            .filter((contact) => contact.followup_id === t.id)
+            .sort((a, b) => b.created_at.localeCompare(a.created_at));
+          const overdue = t.status !== 'resolved' && !!t.next_date && t.next_date < todayLima();
           return (
-            <article className="surface" key={t.id}>
-              <div className="section-heading">
+            <article key={t.id} className="followup-row">
+              <div className="followup-summary">
+                <div className="followup-child">
+                  <Link to={'/ninos/' + t.child_id}>{c?.full_name || 'Abrir ficha'}</Link>
+                  <span>{c?.document_number}</span>
+                  <p className="followup-preview">{t.reason}</p>
+                </div>
                 <div>
                   <Status value={t.status} />
-                  <h2 style={{ marginTop: 10 }}>
-                    <Link to={`/ninos/${t.child_id}`}>{c?.full_name}</Link>
-                  </h2>
-                  <p className="muted">{t.reason}</p>
+                  <p className="followup-preview">
+                    {t.status === 'resolved' ? t.resolution : t.next_action || 'Acción por definir'}
+                  </p>
+                </div>
+                <div className="followup-date">
+                  <span className="followup-label">Próxima fecha</span>
+                  <strong>{t.next_date ? showDate(t.next_date) : 'Sin fecha'}</strong>
+                  {overdue && <span className="followup-overdue">Vencido</span>}
+                </div>
+                <div>
+                  <span className="followup-label">Responsable</span>
+                  <span>
+                    {staff.find((s) => s.id === t.assigned_to)?.full_name || 'Sin responsable'}
+                  </span>
                 </div>
                 {t.status !== 'resolved' && (
-                  <button className="button primary" onClick={() => setSelected(t)}>
+                  <button className="button" onClick={() => setSelected(t)}>
                     Registrar contacto
                   </button>
                 )}
               </div>
-              <div className="contact-details">
-                <p>
-                  <strong>Cuidador:</strong> {c?.guardian_name} · {c?.phone}
-                </p>
-                <p>
-                  <strong>Dirección:</strong> {c?.address}
-                </p>
-                <p>
-                  <strong>Responsable:</strong>{' '}
-                  {staff.find((s) => s.id === t.assigned_to)?.full_name}
-                </p>
-              </div>
-              <div className="rule-notice">
-                <strong>{t.status === 'resolved' ? 'Resolución' : 'Próxima acción'}</strong>
-                <p>
-                  {t.status === 'resolved'
-                    ? t.resolution
-                    : `${t.next_action || 'Por definir'}${t.next_date ? ' · ' + showDate(t.next_date) : ''}`}
-                </p>
-              </div>
-              <details>
-                <summary>
-                  Historial de contactos ({contacts.filter((c) => c.followup_id === t.id).length})
-                </summary>
-                {contacts
-                  .filter((c) => c.followup_id === t.id)
-                  .sort((a, b) => b.created_at.localeCompare(a.created_at))
-                  .map((c) => (
-                    <div className="mini-record" key={c.id}>
-                      <strong>
-                        {showDate(c.created_at)} ·{' '}
-                        {c.channel === 'call'
-                          ? 'Llamada'
-                          : c.channel === 'home_visit'
-                            ? 'Visita domiciliaria'
-                            : 'Otro'}
-                      </strong>
-                      <p>
-                        {c.result === 'contacted'
-                          ? 'Contactado'
-                          : c.result === 'no_answer'
-                            ? 'Sin respuesta'
-                            : 'Datos por corregir'}{' '}
-                        · {c.notes}
-                      </p>
-                      <small>{staff.find((s) => s.id === c.created_by)?.full_name}</small>
+              <details className="followup-detail">
+                <summary>Ver detalle e historial ({history.length})</summary>
+                <div className="followup-detail-body">
+                  <p>
+                    <strong>Motivo</strong>
+                    <br />
+                    {t.reason}
+                  </p>
+                  <p>
+                    <strong>Cuidador y contacto</strong>
+                    <br />
+                    {c?.guardian_name || 'Sin registrar'} · {c?.phone || 'Sin teléfono'}
+                  </p>
+                  <p>
+                    <strong>Dirección</strong>
+                    <br />
+                    {c?.address || 'Sin registrar'}
+                  </p>
+                  <p>
+                    <strong>{t.status === 'resolved' ? 'Resolución' : 'Próxima acción'}</strong>
+                    <br />
+                    {t.status === 'resolved' ? t.resolution : t.next_action || 'Por definir'}
+                  </p>
+                  <div className="followup-history">
+                    <h3>Historial de contactos</h3>
+                    {!history.length && <p className="muted">Aún no hay contactos registrados.</p>}
+                    {history.map((contact) => (
+                      <div className="mini-record" key={contact.id}>
+                        <strong>
+                          {showDate(contact.created_at)} ·{' '}
+                          {contact.channel === 'call'
+                            ? 'Llamada'
+                            : contact.channel === 'home_visit'
+                              ? 'Visita domiciliaria'
+                              : 'Otro'}
+                        </strong>
+                        <p>
+                          {contact.result === 'contacted'
+                            ? 'Contactado'
+                            : contact.result === 'no_answer'
+                              ? 'Sin respuesta'
+                              : 'Datos por corregir'}{' '}
+                          · {contact.notes}
+                        </p>
+                        <small>{staff.find((s) => s.id === contact.created_by)?.full_name}</small>
+                      </div>
+                    ))}
+                  </div>
+                  {t.status !== 'resolved' && (
+                    <div className="row-actions followup-history">
+                      <Link className="button" to={'/ninos/' + t.child_id}>
+                        Abrir ficha y programar
+                      </Link>
+                      <button className="text-button" onClick={() => setResolving(t)}>
+                        Resolver seguimiento
+                      </button>
                     </div>
-                  ))}
-              </details>
-              {t.status !== 'resolved' && (
-                <div className="row-actions">
-                  <Link className="button" to={`/ninos/${t.child_id}`}>
-                    Abrir ficha y programar
-                  </Link>
-                  <button className="text-button" onClick={() => setResolving(t)}>
-                    Resolver seguimiento
-                  </button>
+                  )}
                 </div>
-              )}
+              </details>
             </article>
           );
         })}
         {!tasks.length && (
           <div className="empty-state">No hay seguimientos para estos filtros.</div>
         )}
-      </div>
+      </section>
       {create && <CreateFollowup onClose={() => setCreate(false)} />}
       {selected && (
         <Modal title="Registrar llamada o visita" onClose={() => setSelected(undefined)}>
